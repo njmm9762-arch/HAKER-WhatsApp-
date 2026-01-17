@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>واجهة تحليل سينمائية</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{--c1:#00eaff;--c2:#ff006e;--bg:#03040a}
+*{box-sizing:border-box;font-family:Tahoma,Arial}
+body{margin:0;background:var(--bg);color:var(--c1);overflow:hidden}
+canvas{position:fixed;inset:0;z-index:0;filter:blur(.7px)}
+
+.panel{
+  position:relative;z-index:1;max-width:460px;margin:6vh auto;padding:22px;
+  background:rgba(3,4,10,.82);border:1px solid var(--c1);border-radius:16px;
+  box-shadow:0 0 60px rgba(0,234,255,.35), inset 0 0 35px rgba(255,0,110,.25);
+  animation:pulse 2.2s infinite ease-in-out
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 40px rgba(0,234,255,.35)}
+  50%{box-shadow:0 0 70px rgba(255,0,110,.55)}
+}
+h1{text-align:center;margin-top:0}
+button{
+  width:100%;padding:13px;margin-top:12px;border-radius:12px;border:1px solid var(--c1);
+  background:linear-gradient(135deg,var(--c1),var(--c2));color:#000;font-weight:bold;cursor:pointer
+}
+.hidden{display:none}
+.bar{width:100%;height:12px;border:1px solid var(--c1);border-radius:10px;margin-top:12px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c1),var(--c2));animation:load 5s linear forwards}
+@keyframes load{to{width:100%}}
+input,select{
+  width:100%;padding:11px;margin-top:9px;background:#03040a;color:var(--c1);
+  border:1px solid var(--c1);border-radius:10px
+}
+ul{padding-right:18px}
+code{background:#000;padding:3px 7px;border-radius:8px;color:#ffb3df}
+.count{font-size:22px;text-align:center;margin-top:10px;color:#ffb3df}
+.modal{
+  position:fixed;inset:0;z-index:9;background:rgba(0,0,0,.85);
+  display:flex;align-items:center;justify-content:center
+}
+.modal .box{
+  max-width:420px;padding:22px;border-radius:16px;
+  background:rgba(3,4,10,.95);border:1px solid var(--c2);
+  box-shadow:0 0 50px rgba(255,0,110,.6)
+}
+.modal a{display:block;text-align:center;margin-top:12px;color:#000;
+  background:linear-gradient(135deg,var(--c2),var(--c1));padding:12px;border-radius:12px;font-weight:bold;text-decoration:none}
+.small{font-size:12px;color:#9fe;text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<!-- بوابة تيليجرام -->
+<div id="gate" class="modal">
+  <div class="box">
+    <h1>تنبيه أمني</h1>
+    <p>يجب عليك الاشتراك في قناة تيليجرام قبل البدء.</p>
+    <a id="tg" href="https://t.me/WhatsupBo" target="_blank">الانتقال إلى تيليجرام</a>
+    <button id="continue" class="hidden">تم الاشتراك — متابعة</button>
+    <div class="small">بعد فتح الرابط يمكنك المتابعة.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h1>نظام التحليل المتقدم</h1>
+
+  <button id="start">اضغط للاستهداف</button>
+
+  <div id="loader" class="hidden">
+    <p id="status">تهيئة النواة السوداء…</p>
+    <div class="bar"><span></span></div>
+  </div>
+
+  <div id="phoneBox" class="hidden">
+    <label>كود الدولة</label>
+    <select><option>+20</option><option>+966</option><option>+971</option><option>+1</option></select>
+    <label>رقم الهاتف</label>
+    <input placeholder="712-268515">
+    <button id="go">تشغيل التحليل العميق</button>
+  </div>
+
+  <div id="result" class="hidden"></div>
+</div>
+
+<script>
+// ===== خلفية Matrix =====
+const c=document.getElementById("matrix"),x=c.getContext("2d");
+function R(){c.width=innerWidth;c.height=innerHeight} addEventListener("resize",R); R();
+const chars="01ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%";
+let cols=Math.floor(c.width/14),drops=Array(cols).fill(1);
+setInterval(()=>{
+  x.fillStyle="rgba(3,4,10,.2)"; x.fillRect(0,0,c.width,c.height);
+  x.font="14px monospace";
+  drops.forEach((y,i)=>{
+    x.fillStyle=Math.random()>.5?"#00eaff":"#ff006e";
+    x.fillText(chars[Math.floor(Math.random()*chars.length)],i*14,y*14);
+    drops[i]=y*14>c.height&&Math.random()>.97?0:y+1;
+  });
+},45);
+
+// ===== صوت مرعب (أبطأ وأخفض) =====
+function speak(t){
+  if(!("speechSynthesis"in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang="ar-EG"; u.rate=0.55; u.pitch=0.45; u.volume=1;
+  speechSynthesis.speak(u);
+}
+
+// ===== اهتزاز أقوى =====
+function vibe(p){ if(navigator.vibrate) navigator.vibrate(p); }
+
+// ===== بوابة تيليجرام =====
+const gate=document.getElementById("gate");
+const tg=document.getElementById("tg");
+const cont=document.getElementById("continue");
+tg.onclick=()=>{ cont.classList.remove("hidden"); };
+cont.onclick=()=>{ gate.style.display="none"; speak("تم السماح بالدخول"); vibe([200,80,200,80,300]); };
+
+// ===== منطق الواجهة =====
+const start=document.getElementById("start");
+const loader=document.getElementById("loader");
+const status=document.getElementById("status");
+const phoneBox=document.getElementById("phoneBox");
+const go=document.getElementById("go");
+const result=document.getElementById("result");
+
+start.onclick=()=>{
+  start.classList.add("hidden");
+  loader.classList.remove("hidden");
+  status.textContent="إيقاظ النواة…";
+  speak("إيقاظ النواة"); vibe([300,100,300,100,400]);
+  setTimeout(()=>{ status.textContent="اختراق الطبقات السفلية…"; speak("اختراق الطبقات السفلية"); vibe([400,80,400]); },2000);
+  setTimeout(()=>{ loader.classList.add("hidden"); phoneBox.classList.remove("hidden"); speak("أدخل رقم الهاتف"); },5000);
+};
+
+go.onclick=()=>{
+  phoneBox.classList.add("hidden");
+  loader.classList.remove("hidden");
+  status.textContent="تفكيك الحواجز…";
+  speak("تفكيك الحواجز"); vibe([500,120,500,120,600]);
+  setTimeout(()=>{
+    loader.classList.add("hidden");
+    result.classList.remove("hidden");
+    result.innerHTML=`
+      <p><strong>وصول مؤقت:</strong></p>
+      <ul>
+        <li>الحالة: غير مؤكدة</li>
+        <li>مفتاح الوصول: <code>2808aàwfŕA@№</code></li>
+      </ul>
+      <p>تحميل الأرشيف…</p>
+      <div class="count" id="timer">35:00</div>
+    `;
+    speak("بدأ العد التنازلي");
+    startTimer(35*60);
+  },4000);
+};
+
+// ===== عداد 35 دقيقة =====
+function startTimer(sec){
+  const el=document.getElementById("timer");
+  const iv=setInterval(()=>{
+    sec--;
+    const m=String(Math.floor(sec/60)).padStart(2,"0");
+    const s=String(sec%60).padStart(2,"0");
+    el.textContent=`${m}:${s}`;
+    if(sec%30===0) vibe([200,60,200]);
+    if(sec<=0){
+      clearInterval(iv);
+      el.textContent="00:00";
+      speak("انتهى الوقت. تعذر إكمال التحليل");
+      result.innerHTML+=`<p>انتهى الوقت. تعذر إكمال التحليل.</p>`;
+    }
+  },1000);
+}
+</script>
+</body>
+</html>
